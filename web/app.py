@@ -1,3 +1,4 @@
+from operator import pos
 from flask import Flask, jsonify, request
 from pymongo import MongoClient
 from flask_restful import Api, Resource
@@ -105,8 +106,55 @@ class Store(Resource):
         return jsonify(retJSON)
 
 
+#get endpoint to retrieve sentence in return for token
+class Get(Resource):
+    def post(self):
+        postedData = request.get_json()
+
+        username = postedData["username"]
+        password = postedData["password"]
+
+        check_pw = checkPassword(username, password)
+
+        if not check_pw: 
+            retJSON = {
+                'status': 301,
+                "message": "Incorrect username/password"
+            }
+            return jsonify(retJSON)
+        
+        num_tokens = verifyTokens(username)
+
+        if num_tokens <=0:
+            retJSON = {
+                'status': 302,
+                "message": "Insufficient number of tokens"
+            }
+            return retJSON
+        
+        sentence = users.find_one({"Username":username})[0]["Sentences"]
+
+        users.update_one({
+            "Username": username
+        }, {
+            "$set": {
+                "Tokens": num_tokens - 1
+                }
+        })
+
+        retJSON = {
+            "status": 200,
+            "message": str(sentence)
+        }
+
+        return jsonify(retJSON)
+
+
+
+
 api.add_resource(Register, "/register")
 api.add_resource(Store, "/store")
+api.add_resource(Get, "/get")
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
