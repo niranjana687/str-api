@@ -11,6 +11,24 @@ client = MongoClient('localhost', 27017)
 db = client.sentenceDB
 users = db["Users"] #user collection
 
+#password checking
+def checkPassword(username, password):
+    hashed_pw = users.find_one({
+        "Username":username
+    })[0]["Password"]
+
+    if bcrypt.hashow(password.encode('utf8'), hashed_pw) == hashed_pw:
+        return True
+    else:
+        return False
+
+#verify the number of tokens with user
+def verifyTokens(username):
+    num_tokens = users.find_one({
+        "Username":username
+    })[0]["Tokens"]
+
+    return num_tokens
 #register end point 
 
 class Register(Resource):
@@ -22,7 +40,7 @@ class Register(Resource):
         password = postedData["password"]
 
         #hashing
-        hashed_pw = bcrypt.hashpw(password, bcrypt.gensalt())
+        hashed_pw = bcrypt.hashpw(password.encode('utf8'), bcrypt.gensalt())
 
         users.insert_one({
             "Username":username,
